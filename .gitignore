@@ -8,8 +8,8 @@
 /test7_xiaomi11_output.txt
 /test7_xiaomi_mi8se_output.txt
 
-# Reference document with unconfirmed redistribution rights
-/arm-neon.pdf
+# Office lock file
+/.~ARM NEON Programing.pptx
 
 # Local build products and operating-system metadata
 .DS_Store

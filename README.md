@@ -79,9 +79,14 @@ a local SME matrix-multiplication result.
 historical LIKWID hardware-topology output. Recorded output is reference
 material, not a guarantee that every example runs on every listed device.
 
-Private keys, internal device-access notes, device identifiers, local build
-products, and a reference PDF with unconfirmed redistribution rights are
-excluded from version control.
+## Reference materials
+
+- [arm-neon.pdf](arm-neon.pdf): ARM NEON reference document.
+- [ARM NEON Programing.pptx](ARM%20NEON%20Programing.pptx): ARM NEON
+  presentation.
+
+Private keys, internal device-access notes, device identifiers, and local
+build products are excluded from version control.
 
 ## Licensing
 
