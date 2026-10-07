@@ -1,0 +1,19 @@
+# Local access credentials and internal device records
+/aws_pem/
+*.pem
+*.key
+/agent.md
+/env.md
+/cluster-upgrade-assessment.md
+/test7_xiaomi11_output.txt
+/test7_xiaomi_mi8se_output.txt
+
+# Reference document with unconfirmed redistribution rights
+/arm-neon.pdf
+
+# Local build products and operating-system metadata
+.DS_Store
+/build/
+*.o
+*.out
+*.dSYM/
