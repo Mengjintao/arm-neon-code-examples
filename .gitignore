@@ -2,8 +2,6 @@
 /aws_pem/
 *.pem
 *.key
-/agent.md
-/env.md
 /cluster-upgrade-assessment.md
 /test7_xiaomi11_output.txt
 /test7_xiaomi_mi8se_output.txt

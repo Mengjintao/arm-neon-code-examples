@@ -84,9 +84,11 @@ material, not a guarantee that every example runs on every listed device.
 - [arm-neon.pdf](arm-neon.pdf): ARM NEON reference document.
 - [ARM NEON Programing.pptx](ARM%20NEON%20Programing.pptx): ARM NEON
   presentation.
+- [env.md](env.md): Sanitized cluster environment and job-submission notes.
+- [agent.md](agent.md): Sanitized benchmark-device access templates.
 
-Private keys, internal device-access notes, device identifiers, and local
-build products are excluded from version control.
+Private keys, unsanitized internal device-access records, device identifiers,
+and local build products are excluded from version control.
 
 ## Licensing
 
