@@ -1,0 +1,34 @@
+Load/store ablation: CPU0, kp920, FP32 1024^3, MC=88 NC=48 KC=256.
+Run: bash test/run_memory_ablation.sh. Logs overwrite ../result.out and ../error.err.
+Production kernel is not modified. Generated test kernels/binaries are removed on exit.
+
+baseline: production source, including all loads/stores.
+no_AB_load: remove A/B vector loads, initialize input vectors once with fixed values.
+C input loads and final C stores remain. Empty compiler barrier prevents constant folding.
+no_C_store: remove final C stores; empty compiler barrier consumes all 16 accumulators.
+No runtime assembly instructions are authored by these barriers.
+All variants retain packing, caller C initialization, next-panel/C prefetch, traversal and dimensions.
+Ablations DO NOT compute a valid GEMM. Only baseline undergoes mathematical correctness checking.
+
+Method: 6 interleaved rounds, 5 warmups per case, 15 timed calls per case per round (90 each).
+All variants share the same matrix and packed-buffer addresses. PMU cycles/instructions counted as a pinned group,
+excluding kernel/hypervisor. Reject multiplexed counters. Choose minimum elapsed time, counters from that sample.
+
+Compile main/packing with -O3 -fno-schedule-insns. All three test kernels additionally use:
+-fno-tree-pre -fno-tree-fre -fno-gcse -fno-move-loop-invariants -fno-tree-loop-im
+These prevent loop-invariant lane broadcasts from introducing vector spills into the no-load variant.
+They apply equally to the baseline and ablations; do not compare directly with historical production timings.
+Machine code checks: 32 FMLAs per two-K steady loop; all no-load 32-FMLA loop paths contain no loads/stores;
+no-load has no Q-register stack spills; no-store has no non-stack store instructions.
+ABI register save/restore remains. Compiler can still alter layout, loop versioning and address arithmetic.
+
+Final best samples:
+baseline:    58.305547 ms, 151313313 cycles, 401917177 instructions, IPC 2.656192.
+no_AB_load:  54.806881 ms, 142293522 cycles, 336047401 instructions, IPC 2.361649.
+no_C_store:  57.926357 ms, 150341837 cycles, 401133769 instructions, IPC 2.668145.
+Time reductions vs baseline: 6.0006% and 0.6503%, respectively.
+
+Interpretation: removing A/B loads offers a modest e2e improvement, not zero; it does not support claiming
+complete overlap. Removing final kernel C stores has a small e2e effect in this warm-cache workload.
+These are ablation deltas, not additive exclusive time shares or direct load/store latency measurements.
+Packing stores and caller C-zeroing stores are NOT removed. Prefetch traffic remains in no-load case.

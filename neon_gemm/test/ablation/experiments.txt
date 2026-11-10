@@ -1,0 +1,59 @@
+========== 实验说明：4×16 GEMM 优化消融 ==========
+目的：统一分块和遍历顺序，比较展开、手工流水线、软件预取和 A 打包实现。
+
+共同条件
+  平台：kp920，单线程 taskset -c 0。
+  矩阵：FP32，M=N=K=1024；MR=4，NR=16，MC=88，NC=48，KC=256。
+  驱动：src/main.cpp 的 gemm；pc -> ic -> jc -> jr -> ir。
+  B 每个 pc 打包全部 N 列一次；A 每个 ic 打包一次。
+  编译：GCC 13.2.0，-O3 -mcpu=tsv110 -std=c++17；编译器调度、自动向量化开启。
+  各版独立共享库，-fPIC -shared -Wl,-Bsymbolic；使用同一测试驱动和缓冲区地址。
+  硬件预取保持原设置。下文“无预取”仅指没有显式软件预取。
+  e2e 计时包含：A/B pack、分块循环、微内核、C 清零及写回。
+  不包含：内存分配、随机初始化、正确性检查、预热。
+  每版 3 轮，每轮 15 次；版本顺序随机交错，每次计时前预热 2 次。
+  每轮取 15 次的中位数，最后取 3 个轮中位数的中位数。
+  校验：double 参考结果；1024³，以及 91×53×257、5×17×{1,2,3,5}。
+
+逐步添加优化（版本名 | 做了什么 | 比较对象）
+  V0_register      | step/register_lane.cpp 的单 K 计算体，无软件预取，标量 A pack | 基准
+  V1_unroll2       | 直接复制两次 K 计算体，无手工流水线；其余同 V0               | V0
+  V2_pipeline      | 使用 src/neon_4x16_2unroll_pipeline_2buffer_prfm.cpp 的两展开流水线，关闭全部软件预取 | V1
+  V3_prefetch      | V2 加 next A、next B 和调用端 C 预取                         | V2
+  V4_vector_pack   | V3 的 A pack 改用 pack_v_buffer.cpp                    | V3
+
+从 V4 删除优化（每项独立删除，并非逐项累积）
+  drop_A_prefetch   | 只关闭 next A 预取，保留 B/C 预取                           | V4
+  drop_B_prefetch   | 只关闭 next B 预取，保留 A/C 预取                           | V4
+  drop_C_prefetch   | 只关闭调用端 C 预取，保留 A/B 预取                          | V4
+  drop_all_prefetch | 关闭 A/B/C 全部软件预取，保留流水线和向量 A pack             | V4
+  drop_pipeline    | 两展开顺序 load/FMLA 替代手工流水线，保留预取和向量 A pack     | V4
+
+四展开旁支
+  plain_unroll4    | 直接复制四次 K 计算体，标量 A pack，无软件预取                | V1（两展开）
+
+实现边界
+  V0 仅提取 step 的微内核计算体；没有使用 step 原来的分块、遍历和打包驱动。
+  V0/V1/V2/V3/plain_unroll4 使用 src/pack_s.cpp。
+  其他版本使用 src/pack_v_buffer.cpp。B pack 也不同：pack_s.cpp 的 B 是标量，pack_v_buffer.cpp 的 B 是 NEON 双缓冲。
+  两种 A pack 的处理粒度也不同；这是完整实现对比，不能全部归因于向量指令。
+  “无手工流水线”不表示 CPU 或编译器停止流水调度；所有版本编译选项一致。
+  drop_pipeline 保留预取覆盖范围，但指令安排随循环体改变。
+  删除各项的收益有相互作用，不能相加当作独立时间组成。
+
+日志怎么看
+  CODEGEN：生成汇编的静态循环统计，括号为 FMLA 数/指令数/向量栈访问数/PRFM 数。
+           某些反向分支覆盖尾部或重叠区域，不能把各括号直接相加。
+  CHECK：正确性检查结果。
+  SAMPLE：单次 e2e 原始时间，单位 ms。
+  RESULT：每轮 15 次的中位数、GFLOPS 和最小/最大时间。
+  SUMMARY：文件末尾，三轮中位数的汇总。
+           speedup = V0时间 / 本版时间；time_vs_V4 = 本版时间 / V4时间 - 1。
+
+代码入口
+  test/ablation/prepare.py：从当前源码生成各版 kernel 和统一 driver。
+  test/ablation/bench.cpp：校验、预热、绑核后的随机交错测量。
+  test/ablation/run.sh：编译并运行；覆盖 result.out/error.err，清理临时构建目录。
+  复现：在 gemm_neon 中执行 bash test/ablation/run.sh。
+========== 以下为本次原始测量及汇总 ==========
+

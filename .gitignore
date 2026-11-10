@@ -5,6 +5,12 @@
 /cluster-upgrade-assessment.md
 /test7_xiaomi11_output.txt
 /test7_xiaomi_mi8se_output.txt
+/test8_xiaomi11_output.txt
+/STREAM/
+/.vscode/
+/neon_gemm/test/.build*/
+__pycache__/
+*.pyc
 
 # Office lock file
 /.~ARM NEON Programing.pptx

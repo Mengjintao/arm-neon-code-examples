@@ -8,8 +8,10 @@ r1 = 5  6  7  8
 r2 = 9 10 11 12
 r3 =13 14 15 16
  */
-    float32x4_t r0 = vld1q_f32(src[0]), r1 = vld1q_f32(src[1]);
-    float32x4_t r2 = vld1q_f32(src[2]), r3 = vld1q_f32(src[3]);
+    float32x4_t r0 = vld1q_f32(src[0]);
+    float32x4_t r1 = vld1q_f32(src[1]);
+    float32x4_t r2 = vld1q_f32(src[2]);
+    float32x4_t r3 = vld1q_f32(src[3]);
 
 /*
 z01 = 1 5 2 6 3 7 4 8
@@ -17,7 +19,6 @@ z23 = 9 13 10 14 11 15 12 16
 */
     float32x4x2_t z01 = vzipq_f32(r0, r1);  
     float32x4x2_t z23 = vzipq_f32(r2, r3);
-
 /*
 dst[0] = 1  5  9 13
 dst[1] = 2  6 10 14
